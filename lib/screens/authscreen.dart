@@ -1,10 +1,10 @@
 import 'dart:io';
 
+import 'package:chatapp/widgets/additional_user_info.dart';
 import 'package:chatapp/widgets/user_image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 
 final _firebase = FirebaseAuth.instance;
@@ -37,6 +37,8 @@ class _AuthScreenState extends State<AuthScreen> {
      try {
        final userCredentials = await _firebase.signInWithEmailAndPassword(
            email: _enteredEmail, password: _password);
+       ScaffoldMessenger.of(context).clearSnackBars();
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successfully!")));
      }on FirebaseAuthException catch (error){
        if(error.code == ''){}
        ScaffoldMessenger.of(context).clearSnackBars();
@@ -46,12 +48,13 @@ class _AuthScreenState extends State<AuthScreen> {
       try {
         final userCredentials = await _firebase.createUserWithEmailAndPassword(
             email: _enteredEmail, password: _password);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("SignUp Successfully!")));
         final storageRef = FirebaseStorage.instance.ref().child('user_images').child('${userCredentials.user!.uid}.jpg');
        await
        storageRef.putFile(_selectedImage!);
 
       final imageUrl =  storageRef.getDownloadURL();
-      print(imageUrl);
 
       } on FirebaseAuthException catch (error) {
         if (error.code == '') {}
@@ -68,19 +71,15 @@ class _AuthScreenState extends State<AuthScreen> {
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(
         backgroundColor: Colors.deepPurpleAccent,
-        title: Text("Chat App"),
+        title: Text("App"),
       ),
       body: Center(
         child: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                margin:
-                    EdgeInsets.only(top: 25, bottom: 20, right: 20, left: 20),
-                width: 200,
-                child: Image.asset('assets/images/chat.png'),
-              ),
+              _isLogin? Text("Login",style: TextStyle(color: Colors.white,fontSize:30,fontWeight: FontWeight.bold),): Text("SignUp",style: TextStyle(color: Colors.white,fontSize:30,fontWeight: FontWeight.bold)),
+              SizedBox(height: 10,),
               Card(
                 margin: EdgeInsets.all(20),
                 color: Theme.of(context).colorScheme.onInverseSurface,
@@ -129,6 +128,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               _password = value!;
                             },
                           ),
+                           if(!_isLogin)AddtionalUserInfomation(),
                           SizedBox(
                             height: 12,
                           ),
