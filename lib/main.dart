@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chatapp/screens/authscreen.dart';
 import 'package:chatapp/screens/locationscreen.dart';
 import 'package:chatapp/screens/splash_screen.dart';
