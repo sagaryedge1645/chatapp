@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:chatapp/widgets/additional_user_info.dart';
 import 'package:chatapp/widgets/user_image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-
+import 'package:chatapp/globals.dart'as Globals;
 
 final _firebase = FirebaseAuth.instance;
 
@@ -19,6 +20,15 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  String? validateMobile(String? value) {
+    String pattern = r'(^(?:[+0]9)?[0-9]{10,12}$)';
+    final regex = RegExp(pattern);
+
+    return value!.isEmpty || !regex.hasMatch(value)
+        ? 'Enter a valid mobile number'
+        : null;
+  }
+
   var _isLogin = true;
   final _formKey = GlobalKey<FormState>();
   var _enteredEmail = '';
@@ -34,28 +44,40 @@ class _AuthScreenState extends State<AuthScreen> {
     _formKey.currentState!.save();
 
     if (_isLogin) {
-     try {
-       final userCredentials = await _firebase.signInWithEmailAndPassword(
-           email: _enteredEmail, password: _password);
-       ScaffoldMessenger.of(context).clearSnackBars();
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successfully!")));
-     }on FirebaseAuthException catch (error){
-       if(error.code == ''){}
-       ScaffoldMessenger.of(context).clearSnackBars();
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message?? 'Authentication failed')));
-     }
+      try {
+        final userCredentials = await _firebase.signInWithEmailAndPassword(
+            email: _enteredEmail, password: _password);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Login Successfully!")));
+      } on FirebaseAuthException catch (error) {
+        if (error.code == '') {}
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.message ?? 'Authentication failed')));
+      }
     } else {
       try {
         final userCredentials = await _firebase.createUserWithEmailAndPassword(
             email: _enteredEmail, password: _password);
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("SignUp Successfully!")));
-        final storageRef = FirebaseStorage.instance.ref().child('user_images').child('${userCredentials.user!.uid}.jpg');
-       await
-       storageRef.putFile(_selectedImage!);
 
-      final imageUrl =  storageRef.getDownloadURL();
+       await FirebaseFirestore.instance
+            .collection('user')
+            .doc(userCredentials.user!.uid)
+            .set({
+          'userNumber': Globals.userNumber,
+          'email': _enteredEmail,
+          'gender': Globals.enteredGender,
+          'relativeNumber1': Globals.relativeNumber1,
+          'relativeNumber2': Globals.relativeNumber2
+        });
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('user_images')
+            .child('${userCredentials.user!.uid}.jpg');
+        await storageRef.putFile(_selectedImage!);
 
+        final imageUrl = storageRef.getDownloadURL();
       } on FirebaseAuthException catch (error) {
         if (error.code == '') {}
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -78,8 +100,22 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _isLogin? Text("Login",style: TextStyle(color: Colors.white,fontSize:30,fontWeight: FontWeight.bold),): Text("SignUp",style: TextStyle(color: Colors.white,fontSize:30,fontWeight: FontWeight.bold)),
-              SizedBox(height: 10,),
+              _isLogin
+                  ? Text(
+                      "Login",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold),
+                    )
+                  : Text("SignUp",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold)),
+              SizedBox(
+                height: 10,
+              ),
               Card(
                 margin: EdgeInsets.all(20),
                 color: Theme.of(context).colorScheme.onInverseSurface,
@@ -91,9 +127,12 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if(!_isLogin) UserImagePicker(selectImage: (image) {
-                            _selectedImage = image;
-                          },),
+                          if (!_isLogin)
+                            UserImagePicker(
+                              selectImage: (image) {
+                                _selectedImage = image;
+                              },
+                            ),
                           TextFormField(
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
@@ -127,8 +166,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             onSaved: (value) {
                               _password = value!;
                             },
-                          ),
-                           if(!_isLogin)AddtionalUserInfomation(),
+                          ),if(!_isLogin)AddtionalUserInfomation(),
                           SizedBox(
                             height: 12,
                           ),
