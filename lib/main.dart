@@ -1,5 +1,5 @@
 import 'package:chatapp/screens/authscreen.dart';
-import 'package:chatapp/screens/chatscreen.dart';
+import 'package:chatapp/screens/locationscreen.dart';
 import 'package:chatapp/screens/splash_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
             }
 
             if (snapshot.hasData) {
-              return ChatScreen();
+              return LocationScreen();
             }
             return AuthScreen();
           }),
